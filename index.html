@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="We're getting married — join us. Details, countdown, location and RSVP." />
+  <meta name="theme-color" content="#0a0d0b" />
+  <title>Our Wedding · Save the Date</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500;600&family=Great+Vibes&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ===== Intro overlay ===== -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <div class="intro__inner">
+      <div class="intro__ring"></div>
+      <div class="intro__monogram">
+        <span data-edit="initial1">A</span>
+        <span class="amp">&amp;</span>
+        <span data-edit="initial2">B</span>
+      </div>
+      <div class="intro__line"></div>
+      <p class="intro__text">are getting married</p>
+    </div>
+  </div>
+
+  <!-- ===== Ambient background ===== -->
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb--1"></span>
+    <span class="orb orb--2"></span>
+    <span class="orb orb--3"></span>
+  </div>
+  <canvas id="particles" class="particles" aria-hidden="true"></canvas>
+
+  <!-- ===== Scroll progress ===== -->
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <!-- ===== Navigation ===== -->
+  <header class="nav" id="nav">
+    <a href="#home" class="nav__brand">
+      <span data-edit="initial1">A</span><span class="amp">&amp;</span><span data-edit="initial2">B</span>
+    </a>
+    <nav class="nav__links" id="navLinks">
+      <a href="#story">Story</a>
+      <a href="#countdown">Countdown</a>
+      <a href="#details">Details</a>
+      <a href="#schedule">The Day</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#location">Location</a>
+      <a href="#faq">FAQ</a>
+      <a href="#rsvp" class="nav__cta">RSVP</a>
+    </nav>
+    <div class="nav__right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light / dark mode" title="Toggle theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg>
+      </button>
+      <button class="nav__toggle" id="navToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" id="home">
+    <div class="hero__photo">
+      <img src="assets/photos/Couple_1.PNG" alt="A beautiful photo of the couple" />
+    </div>
+    <div class="hero__overlay"></div>
+    <canvas id="petals" class="hero__petals" aria-hidden="true"></canvas>
+
+    <div class="hero__content">
+      <p class="hero__eyebrow reveal-line">Together with their families</p>
+      <h1 class="hero__names">
+        <span class="hero__name" data-edit="name1">Alex</span>
+        <span class="hero__amp">&amp;</span>
+        <span class="hero__name hero__name--2" data-edit="name2">Bella</span>
+      </h1>
+      <p class="hero__script">invite you to celebrate their wedding</p>
+      <div class="hero__divider"><span></span><i>✦</i><span></span></div>
+      <p class="hero__date" data-edit="dateLong">Wednesday, the 30th of December 2026</p>
+      <p class="hero__place" data-edit="venueShort">Cape Town, South Africa</p>
+
+      <div class="hero__mini-count" id="miniCount" aria-label="Days until the wedding">
+        <strong id="miniDays">—</strong><span>days to go</span>
+      </div>
+
+      <div class="hero__actions">
+        <a href="#rsvp" class="btn btn--primary">RSVP Now</a>
+        <a href="#details" class="btn btn--ghost">The Details</a>
+      </div>
+    </div>
+
+    <a href="#story" class="hero__scroll" aria-label="Scroll down">
+      <span class="hero__scroll-mouse"></span>
+      <span class="hero__scroll-text">Scroll</span>
+    </a>
+  </section>
+
+  <!-- ===== Our Story (timeline) ===== -->
+  <section class="section story" id="story">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">How we got here</p>
+      <h2 class="section__title">Our Story</h2>
+    </div>
+
+    <div class="story__wrap">
+      <div class="story__media reveal">
+        <!-- PLACEHOLDER: replace with a couple photo -->
+        <div class="">
+          <img src="assets/photos/Couple_2.PNG" alt="A beautiful photo of the couple" />
+        </div>
+        <div class="story__media-frame" aria-hidden="true"></div>
+      </div>
+
+      <div class="timeline" id="storyTimeline">
+        <!-- Populated from config.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Countdown ===== -->
+  <section class="section countdown" id="countdown">
+    <div class="countdown__inner reveal">
+      <p class="section__eyebrow">The big day is coming</p>
+      <h2 class="section__title">Counting Down</h2>
+
+      <div class="countdown__clock" id="clock">
+        <div class="count"><div class="count__card"><span class="count__num" id="days">00</span></div><span class="count__label">Days</span></div>
+        <div class="count__sep">:</div>
+        <div class="count"><div class="count__card"><span class="count__num" id="hours">00</span></div><span class="count__label">Hours</span></div>
+        <div class="count__sep">:</div>
+        <div class="count"><div class="count__card"><span class="count__num" id="minutes">00</span></div><span class="count__label">Minutes</span></div>
+        <div class="count__sep">:</div>
+        <div class="count"><div class="count__card"><span class="count__num" id="seconds">00</span></div><span class="count__label">Seconds</span></div>
+      </div>
+
+      <p class="countdown__msg" id="countdownMsg" data-edit="dateLong">Wednesday, the 30th of December 2026</p>
+      <div class="countdown__progress"><span id="yearProgress"></span></div>
+      <p class="countdown__progress-label" id="yearProgressLabel"></p>
+    </div>
+  </section>
+
+  <!-- ===== Details ===== -->
+  <section class="section details" id="details">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">Mark your calendar</p>
+      <h2 class="section__title">The Details</h2>
+    </div>
+
+    <div class="details__grid">
+      <article class="detail-card tilt reveal">
+        <div class="detail-card__icon">💍</div>
+        <h3>Ceremony</h3>
+        <p class="detail-card__time" data-edit="ceremonyTime">15:00</p>
+        <p data-edit="ceremonyVenue">Ceremony venue name</p>
+        <p class="detail-card__addr" data-edit="ceremonyAddr">Street address, City</p>
+      </article>
+
+      <article class="detail-card tilt reveal">
+        <div class="detail-card__icon">🥂</div>
+        <h3>Reception</h3>
+        <p class="detail-card__time" data-edit="receptionTime">18:00</p>
+        <p data-edit="receptionVenue">Reception venue name</p>
+        <p class="detail-card__addr" data-edit="receptionAddr">Street address, City</p>
+      </article>
+
+      <article class="detail-card tilt reveal">
+        <div class="detail-card__icon">🖤</div>
+        <h3>Dress Code</h3>
+        <p class="detail-card__time" data-edit="dressCode">Formal</p>
+        <p data-edit="dressNote">Black tie optional. Emerald accents encouraged.</p>
+      </article>
+    </div>
+
+    <div class="details__cta reveal">
+      <a href="#" class="btn btn--ghost" id="addToCalendar">＋ Add to Calendar</a>
+    </div>
+  </section>
+
+  <!-- ===== Schedule of the day ===== -->
+  <section class="section schedule" id="schedule">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">Order of celebration</p>
+      <h2 class="section__title">The Day</h2>
+    </div>
+    <div class="schedule__track" id="scheduleTrack">
+      <!-- Populated from config.js -->
+    </div>
+  </section>
+
+  <!-- ===== Gallery ===== -->
+  <section class="section gallery" id="gallery">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">Moments</p>
+      <h2 class="section__title">Gallery</h2>
+      <p class="section__lead">A few of our favourite memories — more to come after the big day.</p>
+    </div>
+
+    <div class="gallery__grid" id="galleryGrid">
+      <!-- PLACEHOLDERS: drop your photos in to replace each tile -->
+      <div class="photo-placeholder gallery__item reveal" style="--i:0">
+        <img src="assets/photos/Couple_3.PNG" alt="A beautiful photo of the couple" />
+      </div>
+      <div class="photo-placeholder gallery__item gallery__item--tall reveal" style="--i:1">
+        <img src="assets/photos/Couple_4.PNG" alt="A beautiful photo of the couple" />
+      </div>
+      <div class="photo-placeholder gallery__item reveal" style="--i:2">
+        <img src="assets/photos/Couple_5.PNG" alt="A beautiful photo of the couple" />
+      </div>
+      <div class="photo-placeholder gallery__item reveal" style="--i:3">
+        <img src="assets/photos/Couple_6.PNG" alt="A beautiful photo of the couple" />
+      </div>
+      <div class="photo-placeholder gallery__item gallery__item--wide reveal" style="--i:4">
+        <img src="assets/photos/Couple_7.PNG" alt="A beautiful photo of the couple" />
+      </div>
+      <div class="photo-placeholder gallery__item reveal" style="--i:5">
+        <img src="assets/photos/Couple_2.PNG" alt="A beautiful photo of the couple" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Location ===== -->
+  <section class="section location" id="location">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">Find your way</p>
+      <h2 class="section__title">Location</h2>
+    </div>
+
+    <div class="location__grid">
+      <div class="location__info reveal">
+        <h3 data-edit="venueName">Venue Name</h3>
+        <p class="location__addr" data-edit="venueAddr">123 Vineyard Road,<br />Constantia, Cape Town,<br />7806, South Africa</p>
+        <div class="location__actions">
+          <a href="#" class="btn btn--primary" id="directionsBtn" target="_blank" rel="noopener">Get Directions</a>
+          <a href="#" class="btn btn--ghost" id="mapsBtn" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+        <p class="location__note" data-edit="parkingNote">Parking is available on-site. Carpooling encouraged.</p>
+      </div>
+
+      <div class="location__map reveal">
+        <iframe id="mapFrame" title="Wedding venue map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+        <div class="location__map-glow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RSVP ===== -->
+  <section class="section rsvp" id="rsvp">
+    <div class="rsvp__inner reveal">
+      <p class="section__eyebrow">We'd love to have you there</p>
+      <h2 class="section__title">RSVP</h2>
+      <p class="section__lead">Kindly respond by <strong data-edit="rsvpBy">30 October 2026</strong>.</p>
+
+      <form class="rsvp__form" id="rsvpForm" novalidate>
+        <div class="field">
+          <input type="text" id="guestName" name="name" required placeholder=" " autocomplete="name" />
+          <label for="guestName">Full name</label>
+        </div>
+        <div class="field">
+          <input type="email" id="guestEmail" name="email" required placeholder=" " autocomplete="email" />
+          <label for="guestEmail">Email</label>
+        </div>
+        <div class="field">
+          <select id="attending" name="attending" required>
+            <option value="" disabled selected></option>
+            <option value="yes">Joyfully accepts</option>
+            <option value="no">Regretfully declines</option>
+          </select>
+          <label for="attending">Will you attend?</label>
+        </div>
+        <div class="field">
+          <input type="number" id="guests" name="guests" min="1" max="10" value="1" placeholder=" " />
+          <label for="guests">Number of guests</label>
+        </div>
+        <div class="field field--full">
+          <input type="text" id="dietary" name="dietary" placeholder=" " />
+          <label for="dietary">Dietary requirements (optional)</label>
+        </div>
+        <div class="field field--full">
+          <textarea id="message" name="message" rows="3" placeholder=" "></textarea>
+          <label for="message">A note for us (optional)</label>
+        </div>
+        <button type="submit" class="btn btn--primary field--full">Send RSVP</button>
+      </form>
+
+      <div class="rsvp__success" id="rsvpSuccess" hidden>
+        <div class="rsvp__success-ring">✦</div>
+        <p>Thank you! Your response has been recorded.<br />We can't wait to celebrate with you.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section faq" id="faq">
+    <div class="section__head reveal">
+      <p class="section__eyebrow">Good to know</p>
+      <h2 class="section__title">Questions</h2>
+    </div>
+    <div class="faq__list reveal" id="faqList">
+      <!-- Populated from config.js -->
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <button class="footer__monogram" id="footerMonogram" aria-label="Monogram">
+      <span data-edit="initial1">A</span><span class="amp">&amp;</span><span data-edit="initial2">B</span>
+    </button>
+    <p class="footer__names"><span data-edit="name1">Alex</span> &amp; <span data-edit="name2">Bella</span></p>
+    <p class="footer__date" data-edit="dateLong">Wednesday, the 30th of December 2026</p>
+    <p class="footer__credit">Made with love · See you there ✦</p>
+  </footer>
+
+  <!-- ===== Lightbox ===== -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lightbox__close" id="lightboxClose" aria-label="Close">✕</button>
+    <div class="lightbox__body" id="lightboxBody"></div>
+  </div>
+
+  <!-- ===== Admin: PIN gate ===== -->
+  <div class="admin-gate" id="adminGate" hidden>
+    <div class="admin-gate__card">
+      <div class="admin-gate__monogram"><span data-edit="initial1">A</span><span class="amp">&amp;</span><span data-edit="initial2">B</span></div>
+      <p class="admin-gate__title">Couple's area</p>
+      <p class="admin-gate__sub">Enter your PIN</p>
+      <input type="password" id="adminPin" inputmode="numeric" maxlength="12" autocomplete="off" aria-label="Admin PIN" />
+      <p class="admin-gate__error" id="adminError" hidden>That's not it — try again.</p>
+      <div class="admin-gate__actions">
+        <button class="btn btn--ghost" id="adminCancel">Cancel</button>
+        <button class="btn btn--primary" id="adminEnter">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Admin: dashboard ===== -->
+  <div class="admin" id="adminPanel" hidden>
+    <header class="admin__head">
+      <h2>💚 Couple's Dashboard</h2>
+      <div class="admin__head-actions">
+        <button class="btn btn--ghost btn--sm" id="adminExport">Export CSV</button>
+        <button class="btn btn--ghost btn--sm" id="adminClose">Close</button>
+      </div>
+    </header>
+
+    <div class="admin__stats" id="adminStats">
+      <div class="admin__stat"><strong id="statInvited">0</strong><span>Invited</span></div>
+      <div class="admin__stat admin__stat--yes"><strong id="statYes">0</strong><span>Accepted</span></div>
+      <div class="admin__stat admin__stat--no"><strong id="statNo">0</strong><span>Declined</span></div>
+      <div class="admin__stat"><strong id="statHeads">0</strong><span>Total heads</span></div>
+      <div class="admin__stat"><strong id="statPending">0</strong><span>Awaiting</span></div>
+    </div>
+
+    <nav class="admin__tabs" id="adminTabs">
+      <button class="admin__tab is-active" data-tab="guests" type="button">Guests</button>
+      <button class="admin__tab" data-tab="rsvps" type="button">RSVPs</button>
+      <button class="admin__tab" data-tab="todo" type="button">To-Do</button>
+      <button class="admin__tab" data-tab="contacts" type="button">Contacts</button>
+      <button class="admin__tab" data-tab="notes" type="button">Notes</button>
+      <button class="admin__tab" data-tab="dream" type="button">Dreamboard</button>
+    </nav>
+
+    <!-- Guest list tracker -->
+    <div class="admin__pane is-active" data-pane="guests">
+      <section class="admin__panel">
+        <h3>Guest list tracker</h3>
+        <form class="admin__add" id="guestAddForm">
+          <input type="text" id="newGuestName" placeholder="Guest / family name" required />
+          <input type="number" id="newGuestParty" min="1" max="12" value="1" title="Party size" />
+          <button class="btn btn--primary btn--sm" type="submit">Add</button>
+        </form>
+        <div class="admin__filter">
+          <input type="search" id="guestSearch" placeholder="Search guests…" />
+        </div>
+        <ul class="admin__list" id="guestList"></ul>
+      </section>
+    </div>
+
+    <!-- RSVP inbox -->
+    <div class="admin__pane" data-pane="rsvps">
+      <section class="admin__panel">
+        <h3>RSVP responses <span class="admin__hint" id="rsvpHint"></span></h3>
+        <ul class="admin__list admin__list--rsvp" id="rsvpList"></ul>
+        <p class="admin__note">
+          Note: RSVPs submitted on <em>other people's devices</em> only reach you if you set
+          <code>rsvpEndpoint</code> in <code>js/config.js</code> (e.g. a free Formspree form → emailed to you).
+          This inbox shows responses made in this browser + any you add manually to the tracker.
+        </p>
+        <button class="btn btn--ghost btn--sm" id="adminClear">Clear local RSVP data</button>
+      </section>
+    </div>
+
+    <!-- To-do list -->
+    <div class="admin__pane" data-pane="todo">
+      <section class="admin__panel">
+        <h3>Wedding to-do list <span class="admin__hint" id="todoHint"></span></h3>
+        <form class="admin__add" id="todoAddForm">
+          <input type="text" id="newTodo" placeholder="Add a task…" required />
+          <button class="btn btn--primary btn--sm" type="submit">Add</button>
+        </form>
+        <ul class="admin__list admin__list--todo" id="todoList"></ul>
+      </section>
+    </div>
+
+    <!-- Contacts -->
+    <div class="admin__pane" data-pane="contacts">
+      <section class="admin__panel">
+        <h3>Vendors &amp; contacts</h3>
+        <form class="admin__add admin__add--wrap" id="contactAddForm">
+          <input type="text" id="newContactName" placeholder="Name" required />
+          <input type="text" id="newContactRole" placeholder="Role (photographer, florist…)" />
+          <input type="tel" id="newContactPhone" placeholder="Phone" />
+          <input type="email" id="newContactEmail" placeholder="Email" />
+          <button class="btn btn--primary btn--sm" type="submit">Add</button>
+        </form>
+        <ul class="admin__list admin__list--contacts" id="contactList"></ul>
+      </section>
+    </div>
+
+    <!-- Notes -->
+    <div class="admin__pane" data-pane="notes">
+      <section class="admin__panel">
+        <h3>Notes <span class="admin__hint" id="notesStatus"></span></h3>
+        <textarea id="coupleNotes" class="admin__notes" placeholder="Vow drafts, seating ideas, gift lists, budget thoughts… autosaves as you type."></textarea>
+      </section>
+    </div>
+
+    <!-- Dreamboard -->
+    <div class="admin__pane" data-pane="dream">
+      <section class="admin__panel">
+        <h3>Dreamboard</h3>
+        <p class="admin__note">Your private inspiration board — images are stored in this browser only, never published on the site.</p>
+        <label class="btn btn--primary btn--sm admin__upload">＋ Upload images
+          <input type="file" id="dreamUpload" accept="image/*" multiple hidden />
+        </label>
+        <div class="admin__dream" id="dreamGrid"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
