@@ -44,7 +44,15 @@ All dashboard data lives in your browser's localStorage — private to your devi
 > **Getting guests' RSVPs to you:** GitHub Pages has no server, so RSVPs made on *guests'* devices stay on their devices unless you set `rsvpEndpoint` in `js/config.js` to a (free) [Formspree](https://formspree.io) form endpoint — then every RSVP is also emailed to you.
 
 ## Adding your photos
-Placeholders are the dashed boxes. Drop images into `assets/photos/`, then in `index.html` replace each `<div class="photo-placeholder ...">` with `<img src="assets/photos/your-photo.jpg" alt="..." />`. The gallery includes a built-in lightbox once real images are in.
+Drop images into `assets/photos/`, then point each `<img src="assets/photos/...">` in `index.html` at them. The gallery includes a built-in lightbox.
+
+Every photo is cropped to a fixed shape, so any size or orientation drops in cleanly — the subject just needs to be roughly centred:
+
+| Where | Shape | Suggested size |
+| --- | --- | --- |
+| Hero (`.hero__photo`) | fills the screen | 2400 × 1600 landscape |
+| Our Story (`.story__media`) | 4:5 portrait | 1200 × 1500 |
+| Gallery tiles | 1:1 square | 1200 × 1200 |
 
 ## Colours
 CSS variables at the top of `css/styles.css` — the dark palette under `:root`, the light palette under `[data-theme="light"]`.

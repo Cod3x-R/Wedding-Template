@@ -723,6 +723,7 @@
             </span>
           </div>
           <span class="r-meta">${escapeHtml(r.email || "")}${r.dietary ? " · " + escapeHtml(r.dietary) : ""} · ${new Date(r.submittedAt).toLocaleDateString()}</span>
+          ${r.song ? `<span class="r-meta">♫ ${escapeHtml(r.song)}</span>` : ""}
           ${r.message ? `<span class="r-msg">“${escapeHtml(r.message)}”</span>` : ""}
         </li>`).join("")
       : `<li class="admin__empty">No RSVP responses in this browser yet.</li>`;
@@ -948,11 +949,11 @@
     $("#adminExport").addEventListener("click", () => {
       const guests = store.get("guestList", []);
       const rsvps = store.get("rsvps", []);
-      const rows = [["Type", "Name", "Party/Guests", "Status/Attending", "Email", "Role/Dietary", "Phone/Message", "Date"]];
-      guests.forEach((g) => rows.push(["Guest", g.name, g.party || 1, g.status, "", "", "", ""]));
-      rsvps.forEach((r) => rows.push(["RSVP", r.name, r.guests || 1, r.attending, r.email || "", r.dietary || "", r.message || "", r.submittedAt || ""]));
-      store.get("contacts", []).forEach((c) => rows.push(["Contact", c.name, "", "", c.email || "", c.role || "", c.phone || "", ""]));
-      store.get("todos", []).forEach((t) => rows.push(["To-do", t.text, "", t.done ? "done" : "open", "", "", "", ""]));
+      const rows = [["Type", "Name", "Party/Guests", "Status/Attending", "Email", "Role/Dietary", "Phone/Message", "Song request", "Date"]];
+      guests.forEach((g) => rows.push(["Guest", g.name, g.party || 1, g.status, "", "", "", "", ""]));
+      rsvps.forEach((r) => rows.push(["RSVP", r.name, r.guests || 1, r.attending, r.email || "", r.dietary || "", r.message || "", r.song || "", r.submittedAt || ""]));
+      store.get("contacts", []).forEach((c) => rows.push(["Contact", c.name, "", "", c.email || "", c.role || "", c.phone || "", "", ""]));
+      store.get("todos", []).forEach((t) => rows.push(["To-do", t.text, "", t.done ? "done" : "open", "", "", "", "", ""]));
       const csv = rows.map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
