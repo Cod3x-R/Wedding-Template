@@ -350,7 +350,7 @@
 
       // Auto-sync the guest list tracker if this name is on it
       const guests = store.get("guestList", []);
-      const match = guests.find((g) => g.name.trim().toLowerCase() === data.name.trim().toLowerCase());
+      const match = guests.find((g) => nameKey(g.name) === nameKey(data.name));
       if (match) {
         match.status = data.attending === "yes" ? "confirmed" : "declined";
         match.party = Math.max(1, parseInt(data.guests, 10) || 1);
@@ -661,7 +661,9 @@
   // Trigger 3: #admin in the URL
   function checkHash() { if (location.hash === "#admin") openGate(); }
   window.addEventListener("hashchange", checkHash);
-  checkHash();
+  // Deferred: opening the dashboard runs renderAdmin, which uses constants
+  // declared further down this file — calling it inline would hit their TDZ.
+  setTimeout(checkHash, 0);
 
   /* ---- Dashboard logic ---- */
   function openPanel() {
@@ -682,22 +684,81 @@
   const STATUS_NEXT = { invited: "confirmed", confirmed: "declined", declined: "invited" };
   const STATUS_LABEL = { invited: "Invited", confirmed: "Coming", declined: "Declined" };
 
+  /* Declared (not const) so the #admin deep-link, which opens the dashboard
+     while this script is still evaluating, can already use it. */
+  function nameKey(n) { return String(n || "").trim().toLowerCase().replace(/\s+/g, " "); }
+
+  /* Latest RSVP per name — used to fill in tracker rows, not to count. */
+  function rsvpsByName() {
+    const byName = new Map();
+    store.get("rsvps", [])
+      .slice()
+      .sort((a, b) => String(a.submittedAt || "").localeCompare(String(b.submittedAt || "")))
+      .forEach((r) => { const key = nameKey(r.name); if (key) byName.set(key, r); });
+    return byName;
+  }
+
+  /* Pull RSVP answers into the tracker rows so the list agrees with the stats.
+     Only rows still at the default "invited" are touched — a status the couple
+     set by hand stays put. */
+  function syncGuestList() {
+    const guests = store.get("guestList", []);
+    const byName = rsvpsByName();
+    let changed = false;
+    guests.forEach((g) => {
+      if (g.status && g.status !== "invited") return;
+      const r = byName.get(nameKey(g.name));
+      if (!r) return;
+      g.status = r.attending === "yes" ? "confirmed" : "declined";
+      g.party = Math.max(1, parseInt(r.guests, 10) || 1);
+      changed = true;
+    });
+    if (changed) store.set("guestList", guests);
+    return guests;
+  }
+
+  /* What the stat tiles count: every RSVP response, one for one — so the totals
+     always match the RSVP inbox — plus the guest list rows nobody has responded
+     for yet. A tracker row and that guest's response are the same person, so the
+     row is skipped once a matching name has replied. */
+  function mergedPeople() {
+    const rsvps = store.get("rsvps", []);
+    const responded = new Set(rsvps.map((r) => nameKey(r.name)).filter(Boolean));
+
+    const people = rsvps.map((r) => ({
+      status: r.attending === "yes" ? "confirmed" : "declined",
+      party: Math.max(1, parseInt(r.guests, 10) || 1),
+    }));
+
+    store.get("guestList", []).forEach((g) => {
+      if (responded.has(nameKey(g.name))) return;
+      people.push({ status: g.status || "invited", party: Math.max(1, parseInt(g.party, 10) || 1) });
+    });
+
+    return people;
+  }
+
   function renderAdmin() {
     if (!panel || panel.hidden) return;
-    const guests = store.get("guestList", []);
+    const guests = syncGuestList();
     const rsvps = store.get("rsvps", []);
     const q = ($("#guestSearch").value || "").toLowerCase();
 
-    // Stats
-    const confirmed = guests.filter((g) => g.status === "confirmed");
-    const declined = guests.filter((g) => g.status === "declined");
-    $("#statInvited").textContent = guests.length;
+    // Stats — guest list tracker + anyone who RSVP'd without being on it
+    const people = mergedPeople();
+    const confirmed = people.filter((p) => p.status === "confirmed");
+    const declined = people.filter((p) => p.status === "declined");
+    $("#statInvited").textContent = people.length;
     $("#statYes").textContent = confirmed.length;
     $("#statNo").textContent = declined.length;
-    $("#statHeads").textContent = confirmed.reduce((n, g) => n + (g.party || 1), 0);
-    $("#statPending").textContent = guests.length - confirmed.length - declined.length;
+    $("#statHeads").textContent = confirmed.reduce((n, p) => n + p.party, 0);
+    $("#statPending").textContent = people.length - confirmed.length - declined.length;
 
     // Guest list
+    const onList = new Set(guests.map((g) => nameKey(g.name)));
+    const offList = [...rsvpsByName().keys()].filter((k) => !onList.has(k)).length;
+    $("#guestHint").textContent = offList ? `(${offList} RSVP'd but not on this list)` : "";
+
     const listEl = $("#guestList");
     const filtered = guests.filter((g) => g.name.toLowerCase().includes(q));
     listEl.innerHTML = filtered.length
@@ -714,12 +775,13 @@
     const rsvpEl = $("#rsvpList");
     $("#rsvpHint").textContent = rsvps.length ? `(${rsvps.length})` : "";
     rsvpEl.innerHTML = rsvps.length
-      ? rsvps.slice().reverse().map((r) => `
-        <li>
+      ? rsvps.map((r, i) => ({ r, i })).reverse().map(({ r, i }) => `
+        <li data-i="${i}">
           <div class="r-top">
             <strong>${escapeHtml(r.name || "?")}</strong>
             <span class="${r.attending === "yes" ? "g-yes" : ""}" style="color:${r.attending === "yes" ? "var(--emerald-bright)" : "#e87a7a"}">
               ${r.attending === "yes" ? "✓ Accepts" : "✕ Declines"} · ${r.guests || 1}
+              <button class="admin__del" data-act="del-rsvp" title="Delete this response">✕</button>
             </span>
           </div>
           <span class="r-meta">${escapeHtml(r.email || "")}${r.dietary ? " · " + escapeHtml(r.dietary) : ""} · ${new Date(r.submittedAt).toLocaleDateString()}</span>
@@ -849,6 +911,16 @@
         if (g) g.status = STATUS_NEXT[g.status] || "invited";
       }
       store.set("guestList", guests);
+      renderAdmin();
+    });
+
+    $("#rsvpList").addEventListener("click", (e) => {
+      if (e.target.dataset.act !== "del-rsvp") return;
+      const i = parseInt(e.target.closest("li").dataset.i, 10);
+      const rsvps = store.get("rsvps", []);
+      if (Number.isNaN(i) || !rsvps[i]) return;
+      rsvps.splice(i, 1);
+      store.set("rsvps", rsvps);
       renderAdmin();
     });
 
