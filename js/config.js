@@ -69,6 +69,18 @@ window.WEDDING = {
      and guest RSVPs will be emailed to you. Leave "" to only store locally. */
   rsvpEndpoint: "",
 
+  /* --- INVITATIONS (the Invites tab in the dashboard) --- */
+  /* The invite image that gets shared. Drop your own PNG/JPG in assets/invite/. */
+  inviteImage: "assets/invite/Invite_template.png",
+  /* Where the invite link points. Leave "" to use whatever address the site
+     is open at — set it once you've published (e.g. "https://alexandbella.co.za"). */
+  siteUrl: "",
+  /* Dialling code for local numbers typed as 082… — 27 = South Africa, 44 = UK, 1 = US. */
+  countryCode: "27",
+  /* The message sent with the invite. {name} = guest's name, {link} = your site. */
+  inviteMessage:
+    "Hi {name}! 💚\n\n{name1} & {name2} are getting married on {dateLong}, and we would love you to be there.\n\nYour invitation is attached — all the details and the RSVP are here:\n{link}\n\nPlease let us know by {rsvpBy}. See you there! ✦",
+
   /* --- ADMIN (the hidden couple-only dashboard) ---
      How to open it on the live site:
        1. Type the word  "ourday"  anywhere on the page (just type it), OR

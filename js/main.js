@@ -354,6 +354,7 @@
       if (match) {
         match.status = data.attending === "yes" ? "confirmed" : "declined";
         match.party = Math.max(1, parseInt(data.guests, 10) || 1);
+        if (data.phone && !match.phone) match.phone = data.phone;
         store.set("guestList", guests);
       }
 
@@ -711,6 +712,7 @@
       if (!r) return;
       g.status = r.attending === "yes" ? "confirmed" : "declined";
       g.party = Math.max(1, parseInt(r.guests, 10) || 1);
+      if (r.phone && !g.phone) g.phone = r.phone;
       changed = true;
     });
     if (changed) store.set("guestList", guests);
@@ -765,6 +767,8 @@
       ? filtered.map((g) => `
         <li data-id="${g.id}">
           <span class="g-name">${escapeHtml(g.name)}</span>
+          <input class="g-phone" type="tel" inputmode="tel" data-act="phone" placeholder="Cell number"
+                 value="${escapeHtml(g.phone || "")}" aria-label="Cell number for ${escapeHtml(g.name)}" />
           <span class="g-party">×${g.party || 1}</span>
           <button class="admin__status" data-status="${g.status}" data-act="status">${STATUS_LABEL[g.status] || g.status}</button>
           <button class="admin__del" data-act="del" title="Remove">✕</button>
@@ -784,12 +788,17 @@
               <button class="admin__del" data-act="del-rsvp" title="Delete this response">✕</button>
             </span>
           </div>
-          <span class="r-meta">${escapeHtml(r.email || "")}${r.dietary ? " · " + escapeHtml(r.dietary) : ""} · ${new Date(r.submittedAt).toLocaleDateString()}</span>
+          <span class="r-meta">
+            ${r.phone || r.email
+              ? `<a href="${r.phone ? "tel:" + escapeHtml(r.phone) : "mailto:" + escapeHtml(r.email)}">${escapeHtml(r.phone || r.email)}</a>`
+              : ""}${r.dietary ? " · " + escapeHtml(r.dietary) : ""} · ${new Date(r.submittedAt).toLocaleDateString()}
+          </span>
           ${r.song ? `<span class="r-meta">♫ ${escapeHtml(r.song)}</span>` : ""}
           ${r.message ? `<span class="r-msg">“${escapeHtml(r.message)}”</span>` : ""}
         </li>`).join("")
       : `<li class="admin__empty">No RSVP responses in this browser yet.</li>`;
 
+    renderInvites(guests);
     renderTodos();
     renderContacts();
     renderDream();
@@ -876,6 +885,155 @@
     });
   }
 
+  /* ==================================================================
+     Invitations — one image + one message, sent guest by guest through
+     whichever app the couple (or their phone's share sheet) prefers.
+  ================================================================== */
+  const INVITE_IMG = cfg.inviteImage || "assets/invite/Invite_template.png";
+  const DEFAULT_INVITE_MSG = cfg.inviteMessage ||
+    "Hi {name}! {name1} & {name2} are getting married on {dateLong}. All the details and the RSVP are here:\n{link}";
+
+  function defaultLink() {
+    if (cfg.siteUrl) return cfg.siteUrl;
+    return location.protocol === "file:" ? "" : location.origin + location.pathname.replace(/index\.html$/, "");
+  }
+  function inviteLink() { return (store.get("inviteLink", null) ?? defaultLink()).trim(); }
+  function inviteTemplate() { return store.get("inviteMessage", null) ?? DEFAULT_INVITE_MSG; }
+
+  /* Fill {name}, {link} and any config key the couple drops in as {key}. */
+  function inviteText(name) {
+    return inviteTemplate().replace(/\{(\w+)\}/g, (whole, key) => {
+      if (key === "name") return name || "there";
+      if (key === "link") return inviteLink();
+      return cfg[key] != null ? String(cfg[key]).replace(/<br\s*\/?>/gi, ", ") : whole;
+    });
+  }
+
+  /* 082 123 4567 → 27821234567, so wa.me links reach the right person. */
+  function waNumber(raw) {
+    let d = String(raw || "").replace(/[^\d+]/g, "");
+    const cc = String(cfg.countryCode || "").replace(/\D/g, "");
+    if (d.startsWith("+")) return d.slice(1);
+    if (d.startsWith("00")) return d.slice(2);
+    if (cc && d.startsWith("0")) return cc + d.slice(1);
+    if (cc && d.length <= 10 && !d.startsWith(cc)) return cc + d;
+    return d;
+  }
+
+  /* The image as a File, fetched once. Null when it can't be read —
+     opening the site straight off disk (file://) blocks the fetch. */
+  let invitePromise = null;
+  function inviteFile() {
+    if (!invitePromise) {
+      invitePromise = fetch(INVITE_IMG)
+        .then((r) => (r.ok ? r.blob() : Promise.reject()))
+        .then((b) => new File([b], "wedding-invitation" + (b.type.includes("jpeg") ? ".jpg" : ".png"), { type: b.type }))
+        .catch(() => null);
+    }
+    return invitePromise;
+  }
+
+  function sendLink(channel, name, phone) {
+    const text = inviteText(name);
+    const num = waNumber(phone);
+    const enc = encodeURIComponent(text);
+    switch (channel) {
+      case "whatsapp": return num ? `https://wa.me/${num}?text=${enc}` : `https://wa.me/?text=${enc}`;
+      case "sms":      return `sms:${num ? "+" + num : ""}${/iPhone|iPad|Mac/.test(navigator.userAgent) ? "&" : "?"}body=${enc}`;
+      case "telegram": return `https://t.me/share/url?url=${encodeURIComponent(inviteLink())}&text=${enc}`;
+      case "email":    return `mailto:?subject=${encodeURIComponent(`${cfg.name1 || ""} & ${cfg.name2 || ""} — you're invited`.trim())}&body=${enc}`;
+      default:         return "";
+    }
+  }
+
+  function openSend(channel, name, phone) {
+    const url = sendLink(channel, name, phone);
+    if (!url) return;
+    if (channel === "email" || channel === "sms") location.href = url;
+    else window.open(url, "_blank", "noopener");
+  }
+
+  /* The phone's own share sheet — the only route that carries the image. */
+  async function shareInvite(name, guestId) {
+    const note = $("#inviteShareNote");
+    const text = inviteText(name);
+    const file = await inviteFile();
+    const payload = { title: `${cfg.name1 || ""} & ${cfg.name2 || ""} — you're invited`.trim(), text };
+    if (inviteLink()) payload.url = inviteLink();
+
+    if (navigator.share) {
+      try {
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          // Some apps drop the caption when a file rides along; text still helps the rest.
+          await navigator.share({ ...payload, files: [file] });
+        } else {
+          await navigator.share(payload);
+          if (note) note.textContent = "Shared without the picture — this browser won't attach files. Save the image and add it in the chat.";
+        }
+        if (guestId) { markSent(guestId); renderInvites(); }
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // the couple closed the sheet
+      }
+    }
+    copyText(text);
+    if (note) note.textContent = "No share sheet here — the message is on your clipboard. Use the buttons above, or save the image and attach it yourself.";
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).catch(() => {});
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+    return Promise.resolve();
+  }
+
+  function markSent(id, on) {
+    const sent = store.get("invitesSent", {});
+    if (on === false) delete sent[id]; else sent[id] = new Date().toISOString();
+    store.set("invitesSent", sent);
+  }
+
+  function renderInvites(guests) {
+    const listEl = $("#inviteList");
+    if (!listEl) return;
+    guests = guests || store.get("guestList", []);
+    const sent = store.get("invitesSent", {});
+    const q = ($("#inviteSearch").value || "").toLowerCase();
+
+    const withPhone = guests.filter((g) => g.phone);
+    $("#inviteHint").textContent = withPhone.length
+      ? `${Object.keys(sent).filter((id) => guests.some((g) => g.id === id)).length}/${withPhone.length} marked sent`
+      : "";
+    $("#inviteQueueHint").textContent = guests.length - withPhone.length
+      ? `(${guests.length - withPhone.length} without a number)`
+      : "";
+
+    const rows = guests.filter((g) => g.name.toLowerCase().includes(q));
+    listEl.innerHTML = rows.length
+      ? rows.map((g) => `
+        <li data-id="${g.id}" class="${sent[g.id] ? "is-sent" : ""}">
+          <div class="r-top">
+            <strong>${escapeHtml(g.name)}</strong>
+            <button class="admin__check" data-act="sent" title="Mark as sent">${sent[g.id] ? "✓" : ""}</button>
+          </div>
+          <span class="r-meta">${g.phone ? escapeHtml(g.phone) : "No cell number yet — add one on the Guests tab"}</span>
+          ${g.phone ? `
+          <div class="invite__row-actions">
+            <button class="btn btn--ghost btn--sm" data-act="share">Share…</button>
+            <button class="btn btn--ghost btn--sm" data-act="whatsapp">WhatsApp</button>
+            <button class="btn btn--ghost btn--sm" data-act="sms">SMS</button>
+            <button class="btn btn--ghost btn--sm" data-act="telegram">Telegram</button>
+            <button class="btn btn--ghost btn--sm" data-act="copy">Copy</button>
+          </div>` : ""}
+        </li>`).join("")
+      : `<li class="admin__empty">${q ? "No guests match your search." : "No guests yet — add them on the Guests tab."}</li>`;
+  }
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
@@ -887,22 +1045,65 @@
       if (!name) return;
       const guests = store.get("guestList", []);
       guests.push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        id: uid(),
         name,
+        phone: $("#newGuestPhone").value.trim(),
         party: Math.max(1, parseInt($("#newGuestParty").value, 10) || 1),
         status: "invited",
       });
       store.set("guestList", guests);
       $("#newGuestName").value = "";
+      $("#newGuestPhone").value = "";
       $("#newGuestParty").value = "1";
       renderAdmin();
     });
 
+    /* Paste a list: one guest per line, "Name, cell number, party size" */
+    $("#guestBulkAdd").addEventListener("click", () => {
+      const box = $("#guestBulkText");
+      const rows = box.value.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (!rows.length) return;
+      const guests = store.get("guestList", []);
+      let added = 0;
+      rows.forEach((line) => {
+        const parts = line.split(/[,;\t]/).map((p) => p.trim());
+        const name = parts[0];
+        if (!name || guests.some((g) => nameKey(g.name) === nameKey(name))) return;
+        // The number and the party size can arrive in either order, or not at all.
+        const phone = parts.slice(1).find((p) => /\d/.test(p) && p.replace(/\D/g, "").length >= 7) || "";
+        const size = parts.slice(1).find((p) => /^\d{1,2}$/.test(p));
+        guests.push({
+          id: uid(),
+          name,
+          phone,
+          party: Math.max(1, parseInt(size, 10) || 1),
+          status: "invited",
+        });
+        added++;
+      });
+      store.set("guestList", guests);
+      box.value = "";
+      renderAdmin();
+      $("#guestHint").textContent = `(added ${added})`;
+    });
+
     $("#guestSearch").addEventListener("input", renderAdmin);
+
+    /* Cell numbers are edited in place — save on blur, don't re-render mid-typing */
+    $("#guestList").addEventListener("change", (e) => {
+      if (e.target.dataset.act !== "phone") return;
+      const id = e.target.closest("li").dataset.id;
+      const guests = store.get("guestList", []);
+      const g = guests.find((g) => g.id === id);
+      if (!g) return;
+      g.phone = e.target.value.trim();
+      store.set("guestList", guests);
+      renderInvites(guests);
+    });
 
     $("#guestList").addEventListener("click", (e) => {
       const act = e.target.dataset.act;
-      if (!act) return;
+      if (!act || act === "phone") return; // the phone field saves on change, not on click
       const id = e.target.closest("li").dataset.id;
       let guests = store.get("guestList", []);
       if (act === "del") guests = guests.filter((g) => g.id !== id);
@@ -981,6 +1182,92 @@
       renderAdmin();
     });
 
+    /* Invitations */
+    const previewImg = $("#invitePreview");
+    previewImg.addEventListener("error", () => {
+      previewImg.closest(".invite__preview").innerHTML =
+        `<p class="admin__empty">Couldn't load <code>${escapeHtml(INVITE_IMG)}</code> — drop your invite image there, or point <code>inviteImage</code> in <code>js/config.js</code> at it.</p>`;
+    });
+    previewImg.src = INVITE_IMG;
+
+    const linkInput = $("#inviteLink");
+    const msgInput = $("#inviteMessage");
+    linkInput.value = inviteLink();
+    msgInput.value = inviteTemplate();
+    if (!linkInput.value) $("#inviteSaved").textContent = "Add your site's address so guests have something to tap.";
+
+    let inviteTimer;
+    function saveInviteSettings() {
+      $("#inviteSaved").textContent = "saving…";
+      clearTimeout(inviteTimer);
+      inviteTimer = setTimeout(() => {
+        store.set("inviteLink", linkInput.value.trim());
+        store.set("inviteMessage", msgInput.value);
+        $("#inviteSaved").textContent = "saved ✓";
+      }, 500);
+    }
+    linkInput.addEventListener("input", saveInviteSettings);
+    msgInput.addEventListener("input", saveInviteSettings);
+
+    $("#inviteShare").addEventListener("click", () => shareInvite(""));
+    $$("[data-send]", panel).forEach((btn) =>
+      btn.addEventListener("click", () => openSend(btn.dataset.send, "", ""))
+    );
+    $("#inviteCopy").addEventListener("click", () => {
+      copyText(inviteText(""));
+      $("#inviteShareNote").textContent = "Message copied — paste it wherever you like.";
+    });
+    $("#inviteDownload").addEventListener("click", async () => {
+      const file = await inviteFile();
+      if (!file) {
+        $("#inviteShareNote").textContent = "Couldn't read the invite image — open the site through a web address rather than straight off the disk.";
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file);
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    $("#inviteSearch").addEventListener("input", () => renderInvites());
+
+    $("#inviteList").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      const li = btn.closest("li");
+      const guest = store.get("guestList", []).find((g) => g.id === li.dataset.id);
+      if (!guest) return;
+      const act = btn.dataset.act;
+
+      if (act === "sent") {
+        markSent(guest.id, !li.classList.contains("is-sent"));
+        renderInvites();
+        return;
+      }
+      if (act === "copy") {
+        copyText(inviteText(guest.name));
+        $("#inviteQueueHint").textContent = `copied ${guest.name}'s message ✓`;
+        return;
+      }
+      if (act === "share") { shareInvite(guest.name, guest.id); return; }
+
+      openSend(act, guest.name, guest.phone);
+      markSent(guest.id);
+      renderInvites();
+    });
+
+    $("#inviteCopyNumbers").addEventListener("click", () => {
+      const nums = store.get("guestList", []).filter((g) => g.phone).map((g) => "+" + waNumber(g.phone));
+      copyText(nums.join("\n"));
+      $("#inviteQueueHint").textContent = `${nums.length} number${nums.length === 1 ? "" : "s"} copied ✓`;
+    });
+    $("#inviteMarkNone").addEventListener("click", () => {
+      if (!confirm("Clear every “invite sent” mark?")) return;
+      store.set("invitesSent", {});
+      renderInvites();
+    });
+
     /* Notes — autosave while typing */
     const notesEl = $("#coupleNotes");
     let notesTimer;
@@ -1021,11 +1308,12 @@
     $("#adminExport").addEventListener("click", () => {
       const guests = store.get("guestList", []);
       const rsvps = store.get("rsvps", []);
-      const rows = [["Type", "Name", "Party/Guests", "Status/Attending", "Email", "Role/Dietary", "Phone/Message", "Song request", "Date"]];
-      guests.forEach((g) => rows.push(["Guest", g.name, g.party || 1, g.status, "", "", "", "", ""]));
-      rsvps.forEach((r) => rows.push(["RSVP", r.name, r.guests || 1, r.attending, r.email || "", r.dietary || "", r.message || "", r.song || "", r.submittedAt || ""]));
-      store.get("contacts", []).forEach((c) => rows.push(["Contact", c.name, "", "", c.email || "", c.role || "", c.phone || "", "", ""]));
-      store.get("todos", []).forEach((t) => rows.push(["To-do", t.text, "", t.done ? "done" : "open", "", "", "", "", ""]));
+      const sent = store.get("invitesSent", {});
+      const rows = [["Type", "Name", "Party/Guests", "Status/Attending", "Cell number", "Role/Dietary", "Email/Message", "Song request", "Date", "Invite sent"]];
+      guests.forEach((g) => rows.push(["Guest", g.name, g.party || 1, g.status, g.phone || "", "", "", "", "", sent[g.id] ? "yes" : ""]));
+      rsvps.forEach((r) => rows.push(["RSVP", r.name, r.guests || 1, r.attending, r.phone || "", r.dietary || "", r.message || r.email || "", r.song || "", r.submittedAt || "", ""]));
+      store.get("contacts", []).forEach((c) => rows.push(["Contact", c.name, "", "", c.phone || "", c.role || "", c.email || "", "", "", ""]));
+      store.get("todos", []).forEach((t) => rows.push(["To-do", t.text, "", t.done ? "done" : "open", "", "", "", "", "", ""]));
       const csv = rows.map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));

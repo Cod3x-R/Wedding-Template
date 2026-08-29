@@ -261,8 +261,9 @@
           <label for="guestName">Full name</label>
         </div>
         <div class="field">
-          <input type="email" id="guestEmail" name="email" required placeholder=" " autocomplete="email" />
-          <label for="guestEmail">Email</label>
+          <input type="tel" id="guestPhone" name="phone" required placeholder=" " autocomplete="tel"
+                 inputmode="tel" pattern="[0-9+()\-\s]{7,20}" />
+          <label for="guestPhone">Cell number</label>
         </div>
         <div class="field">
           <select id="attending" name="attending" required>
@@ -361,6 +362,7 @@
     <nav class="admin__tabs" id="adminTabs">
       <button class="admin__tab is-active" data-tab="guests" type="button">Guests</button>
       <button class="admin__tab" data-tab="rsvps" type="button">RSVPs</button>
+      <button class="admin__tab" data-tab="invites" type="button">Invites</button>
       <button class="admin__tab" data-tab="todo" type="button">To-Do</button>
       <button class="admin__tab" data-tab="contacts" type="button">Contacts</button>
       <button class="admin__tab" data-tab="notes" type="button">Notes</button>
@@ -371,11 +373,18 @@
     <div class="admin__pane is-active" data-pane="guests">
       <section class="admin__panel">
         <h3>Guest list tracker <span class="admin__hint" id="guestHint"></span></h3>
-        <form class="admin__add" id="guestAddForm">
+        <form class="admin__add admin__add--wrap" id="guestAddForm">
           <input type="text" id="newGuestName" placeholder="Guest / family name" required />
+          <input type="tel" id="newGuestPhone" placeholder="Cell number" inputmode="tel" autocomplete="off" />
           <input type="number" id="newGuestParty" min="1" max="12" value="1" title="Party size" />
           <button class="btn btn--primary btn--sm" type="submit">Add</button>
         </form>
+        <details class="admin__bulk">
+          <summary>Paste a whole list at once</summary>
+          <p class="admin__note">One guest per line — <code>Name, cell number, party size</code>. The number and party size are optional.</p>
+          <textarea id="guestBulkText" rows="5" placeholder="Ouma Marie, 082 123 4567, 1&#10;The Bothas, +27 83 555 1212, 4&#10;Thabo Nkosi"></textarea>
+          <button class="btn btn--primary btn--sm" id="guestBulkAdd" type="button">Add all</button>
+        </details>
         <div class="admin__filter">
           <input type="search" id="guestSearch" placeholder="Search guests…" />
         </div>
@@ -394,6 +403,61 @@
           This inbox shows responses made in this browser + any you add manually to the tracker.
         </p>
         <button class="btn btn--ghost btn--sm" id="adminClear">Clear local RSVP data</button>
+      </section>
+    </div>
+
+    <!-- Invites -->
+    <div class="admin__pane" data-pane="invites">
+      <section class="admin__panel">
+        <h3>Send the invitation <span class="admin__hint" id="inviteHint"></span></h3>
+
+        <div class="invite__top">
+          <figure class="invite__preview">
+            <img id="invitePreview" alt="The wedding invitation" />
+          </figure>
+
+          <div class="invite__fields">
+            <label class="invite__label" for="inviteLink">Link to your site</label>
+            <input type="url" id="inviteLink" placeholder="https://your-wedding-site.com" />
+
+            <label class="invite__label" for="inviteMessage">
+              Message <span class="admin__hint">— <code>{name}</code> and <code>{link}</code> get filled in</span>
+            </label>
+            <textarea id="inviteMessage" rows="6"></textarea>
+
+            <p class="admin__hint" id="inviteSaved"></p>
+
+            <div class="invite__actions">
+              <button class="btn btn--primary btn--sm" id="inviteShare" type="button">Share invite…</button>
+              <button class="btn btn--ghost btn--sm" data-send="whatsapp" type="button">WhatsApp</button>
+              <button class="btn btn--ghost btn--sm" data-send="email" type="button">Email</button>
+              <button class="btn btn--ghost btn--sm" data-send="telegram" type="button">Telegram</button>
+              <button class="btn btn--ghost btn--sm" data-send="sms" type="button">SMS</button>
+              <button class="btn btn--ghost btn--sm" id="inviteCopy" type="button">Copy message</button>
+              <button class="btn btn--ghost btn--sm" id="inviteDownload" type="button">Save image</button>
+            </div>
+            <p class="admin__note" id="inviteShareNote"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin__panel">
+        <h3>Send to each guest <span class="admin__hint" id="inviteQueueHint"></span></h3>
+        <p class="admin__note">
+          Guests come from your guest list — add a cell number there and they show up here.
+          Tap a channel to open it with the message already written for that guest, then hit send in the app.
+          <strong>Text apps can't attach the picture from a link</strong>, so on a phone use <em>Share invite…</em> above
+          (it opens your normal share sheet with the image attached) and pick the chat; on a laptop, drag the saved
+          image into the chat after the message.
+        </p>
+        <div class="admin__filter">
+          <input type="search" id="inviteSearch" placeholder="Search guests…" />
+        </div>
+        <ul class="admin__list admin__list--invite" id="inviteList"></ul>
+        <div class="invite__bulk">
+          <button class="btn btn--ghost btn--sm" id="inviteCopyNumbers" type="button">Copy all numbers</button>
+          <button class="btn btn--ghost btn--sm" id="inviteMarkNone" type="button">Reset “sent” marks</button>
+        </div>
       </section>
     </div>
 
